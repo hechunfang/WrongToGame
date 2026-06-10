@@ -1,0 +1,10 @@
+{
+  "name": "AI 智能错题消灭机",
+  "description": "拍照上传今日错题，AI 智能识别并诊断出薄弱项，立即针对该薄弱项为您量身定制专属的【数学打地鼠特训关卡】，防错固本、好玩提分！",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
