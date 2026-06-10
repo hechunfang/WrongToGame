@@ -32,7 +32,7 @@ export default function PaywallStage({ diagnostic, onUnlock, onCancel }: Paywall
       {/* Header Topic Diagnosis */}
       <div className="space-y-3">
         <div className="text-center">
-          <span className="inline-block bg-indigo-500 text-white font-bold text-xs px-2.5 py-1 rounded-full mb-1 border-2 border-slate-800">
+          <span className="inline-block bg-emerald-600 text-white font-bold text-xs px-2.5 py-1 rounded-full mb-1 border-2 border-slate-800">
             🔍 AI 智能批改结果
           </span>
           <h3 className="text-2xl font-black text-slate-800 tracking-wide font-cartoon">
@@ -40,7 +40,7 @@ export default function PaywallStage({ diagnostic, onUnlock, onCancel }: Paywall
           </h3>
         </div>
 
-        <div className="bg-amber-50 rounded-2xl border-4 border-slate-800 p-4 space-y-2 relative shadow-inner">
+        <div className="bg-green-50 rounded-2xl border-4 border-slate-800 p-4 space-y-2 relative shadow-inner">
           <div className="flex items-start gap-2.5">
             <span className="text-2xl">🚨</span>
             <div className="space-y-1">
@@ -51,10 +51,10 @@ export default function PaywallStage({ diagnostic, onUnlock, onCancel }: Paywall
             </div>
           </div>
           <div className="bg-white/80 p-2.5 rounded-xl border-2 border-slate-800 text-xs text-slate-600 font-medium leading-relaxed">
-            <span className="font-extrabold text-amber-600">AI老师点评：</span>
-            在该题中，孩子对公式关系理解稍有偏差，极易在类似算式（如
+            <span className="font-extrabold text-emerald-700">AI老师点评：</span>
+            在该题中，孩子对知识结构掌握稍有偏差，极易在类似内容（如
             {diagnostic.wrong_answers[0]}、{diagnostic.wrong_answers[1]}
-            ）中混淆。针对性的高频“打地鼠”答题，能有效强化深度肌肉记忆！
+            ）中混淆。针对性的绿色健康“打地鼠”答题，能有效强化深度肌肉记忆！
           </div>
         </div>
       </div>
@@ -64,13 +64,13 @@ export default function PaywallStage({ diagnostic, onUnlock, onCancel }: Paywall
         {/* Blurry mole grid inside preview */}
         <div className="absolute inset-0 opacity-20 filter blur-sm grid grid-cols-3 gap-2 p-2">
           {[1,2,3,4,5,6].map((i) => (
-            <div key={i} className="bg-amber-950 rounded-xl h-10 border border-white flex items-end justify-center">
-              <div className="w-8 h-8 bg-amber-600 rounded-t-xl"></div>
+            <div key={i} className="bg-emerald-950 rounded-xl h-10 border border-white flex items-end justify-center">
+              <div className="w-8 h-8 bg-emerald-600 rounded-t-xl"></div>
             </div>
           ))}
         </div>
         <div className="relative z-10 space-y-1">
-          <div className="inline-flex items-center gap-1.5 bg-amber-500 text-slate-950 px-2.5 py-0.5 rounded-full border-2 border-slate-950 text-xs font-black">
+          <div className="inline-flex items-center gap-1.5 bg-emerald-500 text-white px-2.5 py-0.5 rounded-full border-2 border-slate-950 text-xs font-black">
             <Lock className="w-3.5 h-3.5 fill-current" /> 已成功量身定制关卡
           </div>
           <p className="text-white text-sm font-extrabold">{diagnostic.question_display}</p>
@@ -81,7 +81,7 @@ export default function PaywallStage({ diagnostic, onUnlock, onCancel }: Paywall
       <div className="space-y-3">
         <p className="text-xs font-extrabold text-slate-505 px-1 flex items-center justify-between">
           <span>🎁 选择学习方案：</span>
-          <span className="text-indigo-600">限时折扣中</span>
+          <span className="text-emerald-700">限时折扣中</span>
         </p>
 
         <div className="grid grid-cols-2 gap-3">
@@ -89,13 +89,13 @@ export default function PaywallStage({ diagnostic, onUnlock, onCancel }: Paywall
             onClick={() => { setSelectedPlan("single"); setShowQr(false); }}
             className={`p-3.5 rounded-xl border-4 text-left transition-all relative overflow-hidden flex flex-col justify-between h-24 ${
               selectedPlan === "single"
-                ? "bg-amber-50 border-amber-500 shadow-[0_4px_0_#D97706]"
+                ? "bg-green-50 border-emerald-500 shadow-[0_4px_0_#059669]"
                 : "bg-white border-slate-800"
             }`}
           >
             <div className="flex justify-between items-center w-full">
-              <span className="font-extrabold text-slate-800 text-xs">单题攻克</span>
-              {selectedPlan === "single" && <Check className="w-4 h-4 text-amber-600 stroke-[3]" />}
+              <span className="font-extrabold text-slate-805 text-xs">单题攻克</span>
+              {selectedPlan === "single" && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />}
             </div>
             <div>
               <p className="text-[10px] text-slate-400 font-bold">本款定制特训</p>
@@ -107,7 +107,7 @@ export default function PaywallStage({ diagnostic, onUnlock, onCancel }: Paywall
             onClick={() => { setSelectedPlan("lifetime"); setShowQr(false); }}
             className={`p-3.5 rounded-xl border-4 text-left transition-all relative overflow-hidden flex flex-col justify-between h-24 ${
               selectedPlan === "lifetime"
-                ? "bg-indigo-50 border-indigo-500 shadow-[0_4px_0_#4F46E5]"
+                ? "bg-emerald-50/80 border-emerald-600 shadow-[0_4px_0_#047857]"
                 : "bg-white border-slate-800"
             }`}
           >
@@ -115,12 +115,12 @@ export default function PaywallStage({ diagnostic, onUnlock, onCancel }: Paywall
               超值
             </span>
             <div className="flex justify-between items-center w-full">
-              <span className="font-extrabold text-indigo-900 text-xs">终身全科通</span>
-              {selectedPlan === "lifetime" && <Check className="w-4 h-4 text-indigo-600 stroke-[3]" />}
+              <span className="font-extrabold text-emerald-950 text-xs">终身全科通</span>
+              {selectedPlan === "lifetime" && <Check className="w-4 h-4 text-emerald-700 stroke-[3]" />}
             </div>
             <div>
-              <p className="text-[10px] text-indigo-400 font-bold">全站错题无限玩</p>
-              <p className="text-lg font-black text-indigo-900">¥19.90</p>
+              <p className="text-[10px] text-emerald-600 font-bold">全站错题无限玩</p>
+              <p className="text-lg font-black text-emerald-950">¥19.90</p>
             </div>
           </button>
         </div>

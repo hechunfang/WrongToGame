@@ -55,7 +55,7 @@ export default function SettlementStage({ score, diagnostic, onReset }: Settleme
           <span className="absolute -bottom-1 -left-1 text-2xl animate-pulse">🎉</span>
         </div>
         
-        <h3 className="cartoon-font text-3xl font-extrabold text-amber-500 tracking-wide">
+        <h3 className="cartoon-font text-3xl font-extrabold text-emerald-600 tracking-wide">
           {levelText}！
         </h3>
         <p className="text-xs text-slate-500 font-bold">
@@ -86,9 +86,9 @@ export default function SettlementStage({ score, diagnostic, onReset }: Settleme
       </div>
 
       {/* Export Free H5 standalone as Premium reward */}
-      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-4 border-dashed border-amber-500 rounded-2xl p-4 text-center space-y-3">
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-4 border-dashed border-emerald-500 rounded-2xl p-4 text-center space-y-3">
         <div className="space-y-1">
-          <span className="inline-block bg-amber-500/10 text-amber-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-300">
+          <span className="inline-block bg-emerald-500/10 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-300">
             🎁 专属尊享特权
           </span>
           <p className="font-extrabold text-slate-800 text-sm">打包下载本关“单文件离线版”游戏</p>
@@ -100,7 +100,7 @@ export default function SettlementStage({ score, diagnostic, onReset }: Settleme
         <button
           onClick={downloadStandaloneGame}
           id="export-h5-button"
-          className="w-full bg-amber-400 hover:bg-amber-300 active:scale-[0.98] border-2 border-slate-800 rounded-xl py-2 px-3 text-xs font-black text-slate-900 transition-all flex items-center justify-center gap-1.5"
+          className="w-full bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] border-2 border-slate-800 rounded-xl py-2 px-3 text-xs font-black text-white transition-all flex items-center justify-center gap-1.5"
         >
           <Download className="w-4 h-4" /> 解锁并保存离线版 [ 100% 免费 ]
         </button>
@@ -115,23 +115,23 @@ export default function SettlementStage({ score, diagnostic, onReset }: Settleme
       {/* Private Traffic conversion block */}
       <div className="bg-slate-900 text-slate-300 rounded-2xl border-4 border-slate-800 p-4 space-y-3.5 text-center">
         <div className="flex items-center gap-2 justify-center border-b border-slate-800 pb-2">
-          <Smartphone className="w-4 h-4 text-violet-400 animate-bounce" />
+          <Smartphone className="w-4 h-4 text-emerald-400 animate-bounce" />
           <span className="text-xs font-extrabold text-white">微信专属私域特学营</span>
         </div>
 
         <div className="flex flex-col items-center space-y-1.5">
           <p className="text-[11px] text-slate-300 font-medium">长按二维码添加专属辅导老师微信：</p>
           {/* Faked QR Code with kid icon for private conversions */}
-          <div className="bg-white p-2 rounded-xl relative border-2 border-indigo-400">
-            <div className="w-24 h-24 bg-indigo-50 border border-indigo-100 flex flex-col items-center justify-center relative overflow-hidden">
-              <span className="text-2xl mb-1">🐼</span>
+          <div className="bg-white p-2 rounded-xl relative border-2 border-emerald-400">
+            <div className="w-24 h-24 bg-emerald-50 border border-emerald-100 flex flex-col items-center justify-center relative overflow-hidden">
+               <span className="text-2xl mb-1">🐼</span>
               <p className="text-[8px] text-slate-400 font-black">AI 教育小管家</p>
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-pink-500/10"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-teal-500/10"></div>
               {/* Fake Scan indicator */}
-              <div className="absolute left-0 right-0 h-0.5 bg-red-400 animate-[bounce_2.5s_infinite]"></div>
+              <div className="absolute left-0 right-0 h-0.5 bg-emerald-400 animate-[bounce_2.5s_infinite]"></div>
             </div>
           </div>
-          <p className="text-[10px] text-indigo-400 font-black">老师微信号：aimath_helper_09</p>
+          <p className="text-[10px] text-emerald-500 font-black">老师微信号：aimath_helper_09</p>
         </div>
 
         <div className="flex items-center justify-center gap-1.5 pt-0.5">
@@ -140,7 +140,7 @@ export default function SettlementStage({ score, diagnostic, onReset }: Settleme
             className={`text-[10px] font-black rounded-lg px-2.5 py-1 flex items-center gap-1 border transition-all ${
               joinedWeChat
                 ? "bg-slate-800 border-slate-700 text-slate-500"
-                : "bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500"
+                : "bg-emerald-600 border-emerald-500 text-white hover:bg-emerald-500"
             }`}
           >
             {joinedWeChat ? "✓ 已关注添加" : "添加微信号"}
@@ -152,8 +152,8 @@ export default function SettlementStage({ score, diagnostic, onReset }: Settleme
       <div className="space-y-2">
         <button
           onClick={handlePrintLockClick}
-          style={{ boxShadow: "0 6px 0 #1E293B" }}
-          className="w-full bg-violet-600 hover:bg-violet-500 active:translate-y-1 active:shadow-none border-4 border-slate-800 text-white font-black text-base py-3 rounded-xl transition-all font-cartoon flex items-center justify-center gap-2"
+          style={{ boxShadow: "0 6px 0 #064e3b" }}
+          className="w-full bg-emerald-600 hover:bg-emerald-500 active:translate-y-1 active:shadow-none border-4 border-slate-800 text-white font-black text-base py-3 rounded-xl transition-all font-cartoon flex items-center justify-center gap-2"
         >
           <Award className="w-5 h-5 fill-current text-amber-300 animate-pulse" />
           免费生成并打印该错题描红字帖

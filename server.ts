@@ -29,28 +29,45 @@ const ai = apiKey
 // Mock fallback questions database in case API is not configured or fails
 const fallbacks = [
   {
+    type: "math",
     target_topic: "7的乘法口诀",
+    target_display: "找出 7 × 8 的正确答案！",
+    correct_sequence: ["56"],
+    grid_items: ["54", "56", "49", "64", "63", "42"],
     question_display: "找出 7 × 8 的正确答案！",
     correct_answer: "56",
     wrong_answers: ["54", "49", "64", "63", "58"]
   },
   {
-    target_topic: "两位数进位加法",
-    question_display: "找出 38 + 45 的正确答案！",
-    correct_answer: "83",
-    wrong_answers: ["73", "82", "84", "78", "93"]
+    type: "chinese_pinyin",
+    target_topic: "前后鼻音分辨",
+    target_display: "找出汉字‘橙’的正确拼音！",
+    correct_sequence: ["chéng"],
+    grid_items: ["chén", "chéng", "céng", "cén", "chěng", "shéng"],
+    question_display: "找出汉字‘橙’的正确拼音！",
+    correct_answer: "chéng",
+    wrong_answers: ["chén", "céng", "cén", "chěng", "shéng"]
   },
   {
-    target_topic: "除数是一位数的除法",
-    question_display: "找出 72 ÷ 8 的正确答案！",
-    correct_answer: "9",
-    wrong_answers: ["8", "7", "6", "11", "12"]
+    type: "chinese_words",
+    target_topic: "形近字近义词连连看",
+    target_display: "连连看：拼出‘检查’与‘拨打’的正确组合！",
+    correct_sequence: [["检", "查"], ["拨", "打"]],
+    grid_items: ["检", "拔", "拨", "查", "打", "河"],
+    question_display: "连连看：拼出‘检查’与‘拨打’的正确组合！",
+    correct_answer: "检查/拨打",
+    wrong_answers: ["查", "拨", "打", "拔"]
   },
   {
-    target_topic: "乘加乘减混合运算",
-    question_display: "找出 5 × 6 - 4 的正确答案！",
-    correct_answer: "26",
-    wrong_answers: ["24", "10", "30", "16", "28"]
+    type: "english_spelling",
+    target_topic: "常见名词拼写",
+    target_display: "按顺序拼出单词：【朋友】(friend)",
+    correct_sequence: ["f", "r", "i", "e", "n", "d"],
+    grid_items: ["f", "e", "r", "i", "n", "d", "a", "t"],
+    text_reference: "friend",
+    question_display: "按顺序拼出单词：【朋友】(friend)",
+    correct_answer: "friend",
+    wrong_answers: ["e", "r", "i", "n", "a", "t"]
   }
 ];
 
@@ -64,6 +81,50 @@ app.post("/api/analyze-question", async (req, res) => {
         error: "Missing image parameter",
         fallback: fallbacks[0]
       });
+    }
+
+    // Intercept local sample mock sheets to avoid uploading non-base64 SVG data URLs to Gemini API
+    if (typeof image === "string") {
+      if (image.includes("7 × 8 = 52")) {
+        console.log("Interceded local Sample 0: 7的乘法口诀");
+        return res.json({
+          success: true,
+          source: "local_sample_0",
+          data: fallbacks[0]
+        });
+      }
+      if (image.includes("橙子") || image.includes("ceng")) {
+        console.log("Interceded local Sample 1: 语文拼音");
+        return res.json({
+          success: true,
+          source: "local_sample_1",
+          data: fallbacks[1]
+        });
+      }
+      if (image.includes("拨打") || image.includes("连连看")) {
+        console.log("Interceded local Sample 2: 组词连连看");
+        return res.json({
+          success: true,
+          source: "local_sample_2",
+          data: fallbacks[2]
+        });
+      }
+      if (image.includes("friend") || image.includes("english")) {
+        console.log("Interceded local Sample 3: 英语拼写");
+        return res.json({
+          success: true,
+          source: "local_sample_3",
+          data: fallbacks[3]
+        });
+      }
+      if (image.startsWith("data:image/svg+xml")) {
+        console.log("Interceded custom SVG template, returning math fallback.");
+        return res.json({
+          success: true,
+          source: "local_sample_svg",
+          data: fallbacks[0]
+        });
+      }
     }
 
     if (!ai) {
@@ -92,19 +153,17 @@ app.post("/api/analyze-question", async (req, res) => {
 
     // Call Gemini 3.5 Flash for image processing (free to use, very fast)
     console.log("Analyzing image with gemini-3.5-flash...");
-    const prompt = `你是一位小学数学教育专家与少儿游戏化特训设计师。请细致分析用户上传的错题照片，并按以下步骤动作：
-1. 找出题目中的算式错误，指出最底层的‘数学薄弱知识点’（例如：7的乘法口诀、两位数进位加法、两位数退位减法、包含乘除的四则混合运算）。
-2. 针对诊断出的薄弱点，为孩子度身定做一关“数学打地鼠（Whack-a-Mole）”特训关卡。
-3. 设定题目的‘游戏内目标问题’（如 “找出 7 × 8 的正确答案！”）和‘唯一正确答案’（如 “56”）。
-4. 设定5个极具儿童易错特征、有强迷惑性的‘错误算式结果答案列表’（如：54、49、63等算式邻近值）。
-
-返回结果必须是以下严格的JSON结构，不需要任何MarkDown语法块包裹：
-{
-  "target_topic": "一位数乘以两位数",
-  "question_display": "找出 12 × 7 的正确答案！",
-  "correct_answer": "84",
-  "wrong_answers": ["74", "82", "94", "88", "72"]
-}`;
+    const prompt = `你是一位少儿金牌教育专家与少儿游戏化特训设计师。请细致分析用户上传的错题照片，并按以下步骤动作：
+1. 诊断错题：
+   - 如果是数学算式错，设 type="math"。
+   - 如果是语文拼音错，设 type="chinese_pinyin"。
+   - 如果是语文形近字或连连看过错，设 type="chinese_words"。
+   - 如果是英语单词拼写错，设 type="english_spelling"。
+2. 设定 target_topic (知识点，如 '7的乘法口诀', '形近字连连看', '前后鼻音分辨')。
+3. 设定 target_display (提示孩子的描述词，如 '找出 7 × 8 的正确答案！' 或 '找出 橙 的正确拼音！' 或者是连二元组 '拼出检查与拨打的组合！')。
+4. 设定 correct_sequence 为扁平化字符串数组，如 ["56"]，["chéng"]，对于拼单词可写成各字母 ["f", "r", "i", "e", "n", "d"]，对于连连看可平铺为二元组拼成的单词。
+5. 设定 grid_items 获取6至9个小拼块，供孩子完成。
+同时注入 question_display, correct_answer 和 wrong_answers 做兼容。`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",
@@ -122,25 +181,36 @@ app.post("/api/analyze-question", async (req, res) => {
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            target_topic: {
+            type: {
               type: Type.STRING,
-              description: "The core weakness title or topic identified, e.g. '7的乘法口诀'"
+              description: "Must be 'math' or 'chinese_pinyin' or 'chinese_words' or 'english_spelling'"
+            },
+            target_topic: {
+              type: Type.STRING
+            },
+            target_display: {
+              type: Type.STRING
+            },
+            correct_sequence: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            },
+            grid_items: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
             },
             question_display: {
-              type: Type.STRING,
-              description: "The game prompt text, e.g. '找出 7 × 8 的正确答案！'"
+              type: Type.STRING
             },
             correct_answer: {
-              type: Type.STRING,
-              description: "The exact correct answer value, e.g. '56'"
+              type: Type.STRING
             },
             wrong_answers: {
               type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description: "A list of exactly 5 typical incorrect answers for this topic"
+              items: { type: Type.STRING }
             }
           },
-          required: ["target_topic", "question_display", "correct_answer", "wrong_answers"]
+          required: ["type", "target_topic", "target_display", "correct_sequence", "grid_items"]
         }
       }
     });
@@ -165,7 +235,6 @@ app.post("/api/analyze-question", async (req, res) => {
         data: randomFallback
       });
     }
-
   } catch (error: any) {
     console.error("Error in /api/analyze-question:", error);
     const randomFallback = fallbacks[Math.floor(Math.random() * fallbacks.length)];
@@ -177,6 +246,7 @@ app.post("/api/analyze-question", async (req, res) => {
     });
   }
 });
+
 
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
