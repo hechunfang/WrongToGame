@@ -21,6 +21,7 @@ export default function GameStage({ diagnostic, onFinish }: GameStageProps) {
 
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
+  const [correctCount, setCorrectCount] = useState(0);
 
   // Math & Pinyin whack-a-mole states
   const [moles, setMoles] = useState<Mole[]>(
@@ -116,12 +117,12 @@ export default function GameStage({ diagnostic, onFinish }: GameStageProps) {
 
   // Trigger game finish
   useEffect(() => {
-    if (timeLeft <= 0 && !hasFinishedRef.current) {
+    if ((timeLeft <= 0 || correctCount >= 3) && !hasFinishedRef.current) {
       hasFinishedRef.current = true;
       playSound("finish");
       onFinish(score);
     }
-  }, [timeLeft, score, onFinish]);
+  }, [timeLeft, correctCount, score, onFinish]);
 
   // Clock Countdown Loop
   useEffect(() => {
@@ -174,14 +175,8 @@ export default function GameStage({ diagnostic, onFinish }: GameStageProps) {
               val = nonAnswers[Math.floor(Math.random() * nonAnswers.length)] || "✕";
             }
 
-            // Decorate math formulas if applicable
-            if (gameType === "math" && diagnostic.question_display && diagnostic.correct_answer) {
-              if (isCorrect) {
-                val = getFormulaEquiv(diagnostic.question_display, diagnostic.correct_answer);
-              } else {
-                val = getFormulaEquiv(diagnostic.question_display, val);
-              }
-            }
+            // Moles display simple fallback numbers as requested to keep font size large and clear.
+            // No formula decoration on mole.
 
             return {
               ...m,
@@ -238,6 +233,7 @@ export default function GameStage({ diagnostic, onFinish }: GameStageProps) {
     if (clickedMole.isCorrect) {
       playSound("correct");
       setScore((s) => s + 10);
+      setCorrectCount((c) => c + 1);
       setFeedback("💥 答对啦，你真棒！+10分");
       setFeedbackType("success");
       triggerOverlayEffect("correct");
@@ -290,6 +286,7 @@ export default function GameStage({ diagnostic, onFinish }: GameStageProps) {
       if (isPairCorrect) {
         playSound("correct");
         setScore((s) => s + 20);
+        setCorrectCount((c) => c + 1);
         setSolvedWordIndexes((prev) => [...prev, idx1, idx2]);
         setFeedback(`💯 连对啦！【${val1}】和【${val2}】抱成团！+20分`);
         setFeedbackType("success");
@@ -337,6 +334,7 @@ export default function GameStage({ diagnostic, onFinish }: GameStageProps) {
         setTimeout(() => {
           playSound("correct");
           setScore((s) => s + 30);
+          setCorrectCount((c) => c + 1);
           setFeedback(`👑 极速通关！单词【${correctSeq.join("").toUpperCase()}】完全拼对！+30分`);
           setFeedbackType("success");
           triggerOverlayEffect("correct");
@@ -422,6 +420,28 @@ export default function GameStage({ diagnostic, onFinish }: GameStageProps) {
         </div>
       </div>
 
+      {/* Target Progress Bar Tracker */}
+      <div id="target-progress-bar-tracker" className="bg-emerald-50 border-4 border-slate-800 rounded-2xl p-2.5 flex items-center justify-between shadow-[0_3px_0_#064e3b]">
+        <span className="text-xs font-black text-emerald-900 flex items-center gap-1.5 font-cartoon">
+          🌱 关卡目标: 答对 3 个即可通关！
+        </span>
+        <div className="flex items-center gap-1">
+          {[1, 2, 3].map((star) => (
+            <span
+              key={star}
+              className={`text-lg transition-all duration-300 ${
+                correctCount >= star ? "scale-110 filter drop-shadow animate-bounce" : "opacity-30 saturation-0"
+              }`}
+            >
+              ⭐
+            </span>
+          ))}
+          <span className="text-xs font-mono font-extrabold text-white bg-emerald-600 border border-slate-800 px-2 py-0.5 rounded-full ml-1 shadow-sm">
+            {correctCount}/3
+          </span>
+        </div>
+      </div>
+
       {/* 2. Target Question Banner */}
       <div className={`bg-gradient-to-br ${themeStyles.bg} rounded-3xl border-4 border-slate-800 p-4 shadow-[0_4px_0_#1E293B] relative overflow-hidden`}>
         <div className="absolute right-[-10px] top-[-10px] opacity-10 text-6xl">🎈</div>
@@ -432,6 +452,16 @@ export default function GameStage({ diagnostic, onFinish }: GameStageProps) {
         <p className="text-white text-base font-black text-center mt-1.5 leading-normal tracking-wide">
           {headingQuestion}
         </p>
+
+        {/* Conceptual visual repeated-addition or explanation sub-banner for Math */}
+        {gameType === "math" && diagnostic.question_display && (
+          <div className="mt-2.5 bg-black/40 border-2 border-white/10 rounded-2xl py-2 px-3 text-center flex flex-col items-center justify-center gap-0.5">
+            <span className="text-[10px] text-emerald-300 font-extrabold tracking-widest">💡 算术解析提示</span>
+            <span className="text-lg sm:text-2xl font-black text-yellow-300 font-mono tracking-wide animate-pulse">
+              {getFormulaEquiv(diagnostic.question_display, "?")}
+            </span>
+          </div>
+        )}
 
         {/* Spelling HUD component for English spellings */}
         {gameType === "english_spelling" && (
@@ -503,9 +533,15 @@ export default function GameStage({ diagnostic, onFinish }: GameStageProps) {
                 </div>
 
                 {/* Grid Item Content Container held by the Mole */}
-                <div className="bg-slate-950 border-2 border-slate-800 rounded-xl px-1.5 py-0.5 mt-2 max-w-[95%] text-center shadow-md overflow-hidden">
+                <div className="bg-slate-950 border-2 border-slate-800 rounded-xl px-2 py-1 mt-1.5 max-w-[95%] text-center shadow-md overflow-hidden min-w-[70px] flex items-center justify-center">
                   <span className={`font-black text-amber-300 font-mono tracking-tighter leading-none block whitespace-nowrap ${
-                    mole.value.length > 10 ? 'text-[9px]' : mole.value.length > 5 ? 'text-[11px]' : 'text-xs'
+                    mole.value.length > 10 
+                      ? 'text-[10px]' 
+                      : mole.value.length > 5 
+                      ? 'text-xs' 
+                      : mole.value.length >= 3 
+                      ? 'text-sm sm:text-base' 
+                      : 'text-2xl sm:text-3xl scale-110 drop-shadow-[0_2px_0_#000000]'
                   }`}>
                     {mole.value}
                   </span>
