@@ -134,10 +134,10 @@ export default function UploadStage({ onAnalyze, isAnalyzing, practiceCount, isP
         {/* Added Trial notice */}
         <div className="mt-3 pt-2.5 border-t-2 border-emerald-800/20 flex items-center justify-between">
           <span className="text-xs font-black text-emerald-700 font-cartoon">
-            🎁 家长特权福利
+            🎁 护眼成长营特权
           </span>
-          <span className="text-xs font-extrabold text-slate-850 bg-white border-2 border-slate-800 rounded-lg px-2 py-0.5 shadow-[0_2px_0_#1E293B]">
-            {isPaid ? "👑 终身无限制" : `第 ${practiceCount + 1} 关/首10关免费`}
+          <span className="text-xs font-extrabold text-emerald-800 bg-white border-2 border-emerald-800 rounded-lg px-2 rounded-md py-0.5 shadow-[0_2px_0_#065f46]">
+            {isPaid ? "👑 终身特权版已激活" : "🎯 AI双维精细特训"}
           </span>
         </div>
       </div>
@@ -167,7 +167,6 @@ export default function UploadStage({ onAnalyze, isAnalyzing, practiceCount, isP
               type="file"
               ref={fileInputRef}
               accept="image/*"
-              capture="environment"
               onChange={handleImageUpload}
               className="hidden"
               id="math-camera-input"
@@ -183,8 +182,8 @@ export default function UploadStage({ onAnalyze, isAnalyzing, practiceCount, isP
                 <Camera className="w-8 h-8 text-emerald-800" />
               </div>
               <div className="text-center">
-                <span className="block font-black text-xl tracking-wide font-cartoon">📸 拍照上传今日错题</span>
-                <span className="text-xs text-emerald-105 mt-1 block">支持口算本、拼音本、试卷拍照</span>
+                <span className="block font-black text-xl tracking-wide font-cartoon">📸 选图 / 拍照上传今日错题</span>
+                <span className="text-xs text-emerald-100 mt-1 block">支持从手机相册选图或使用相机拍照</span>
               </div>
             </button>
             

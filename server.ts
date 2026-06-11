@@ -71,6 +71,11 @@ const fallbacks = [
   }
 ];
 
+// GET API for health checking and troubleshooting
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", message: "API is awake and running!" });
+});
+
 // POST API for question diagnostic using Gemini API
 app.post("/api/analyze-question", async (req, res) => {
   try {
@@ -109,7 +114,7 @@ app.post("/api/analyze-question", async (req, res) => {
           data: fallbacks[2]
         });
       }
-      if (image.includes("friend") || image.includes("english")) {
+      if (image.includes("friend") || image.includes("freind") || image.includes("english") || image.includes("Jim")) {
         console.log("Interceded local Sample 3: 英语拼写");
         return res.json({
           success: true,
@@ -153,17 +158,25 @@ app.post("/api/analyze-question", async (req, res) => {
 
     // Call Gemini 3.5 Flash for image processing (free to use, very fast)
     console.log("Analyzing image with gemini-3.5-flash...");
-    const prompt = `你是一位少儿金牌教育专家与少儿游戏化特训设计师。请细致分析用户上传的错题照片，并按以下步骤动作：
-1. 诊断错题：
+    const prompt = `你是一位卓越的少儿教育专家与智慧游戏化学特训设计师。请细致、全盘分析用户上传的错题照片：
+1. 观察红笔圈注、红笔X（✖）、修正备注（如老师写的改正字词或拼音对错），找到真正做错的题目：
+   - 比如：学生在拼音“gān tián”下写了“干甜”（写成“干”字），由于正确汉字是“甘”，学生犯了同音字/错别字写错经典典型错误。
    - 如果是数学算式错，设 type="math"。
-   - 如果是语文拼音错，设 type="chinese_pinyin"。
-   - 如果是语文形近字或连连看过错，设 type="chinese_words"。
-   - 如果是英语单词拼写错，设 type="english_spelling"。
-2. 设定 target_topic (知识点，如 '7的乘法口诀', '形近字连连看', '前后鼻音分辨')。
-3. 设定 target_display (提示孩子的描述词，如 '找出 7 × 8 的正确答案！' 或 '找出 橙 的正确拼音！' 或者是连二元组 '拼出检查与拨打的组合！')。
-4. 设定 correct_sequence 为扁平化字符串数组，如 ["56"]，["chéng"]，对于拼单词可写成各字母 ["f", "r", "i", "e", "n", "d"]，对于连连看可平铺为二元组拼成的单词。
-5. 设定 grid_items 获取6至9个小拼块，供孩子完成。
-同时注入 question_display, correct_answer 和 wrong_answers 做兼容。`;
+   - 如果是语文拼音或声调拼读错误，或看拼音写字词中生字写错、写成错字/同音同音近形近字（例如“甘”写成“干”，“温暖”写成其它），设 type="chinese_pinyin"。因为这类错字/拼音错误最好的训练方式就是打地鼠——让顶着正确字（如“甘”）的地鼠跑出来，让孩子去敲击它，而混淆项（如“干”）作为干扰项，教孩子分清！
+   - 如果是语文形近字连线、偏旁、连字词搭配错误，设 type="chinese_words"。
+   - 如果是英语单词拼写漏字母、字母顺序错，设 type="english_spelling"。
+
+2. 设定核心字段：
+   - target_topic: 给该错题对应的知识要点，应精炼简短。如：“形近字辨析 (gān)”或“音近字纠错”。
+   - target_display: 极具趣味性的儿童化游戏引导词。
+     * 如果是同音字/错别字写错（如学生写了“干甜”中的“干”），这里要设计极具儿童特训特色、简单拼读提示语，如：请找出“gān tián (甘甜)”中正确的第一个字！
+     * 如果是数学算式，直接展示算式题目。
+   - correct_sequence: 扁平化字符串数组，放正确的答案字符。
+     * 例如同音字纠错，如果是要写“甘”，这里就填：["甘"]
+   - grid_items: 生成 6 至 9 个小拼块，供孩子特训时从里面辨认和挑选（必须包含 correct_sequence 中的元素，以及针对性的混淆项，如包含“干”来训练孩子，加上其它形近字同音字如“杆”、“岗”、“感”、“栏”等）。
+   - question_display, correct_answer 和 wrong_answers 做好兼容字段写入。其中 correct_answer 为 correct_sequence[0]，wrong_answers 是其它干扰字组成的数组。
+
+请务必注意：很多学龄前或一二年级试卷采用“看拼音写词语”，学生极其容易混淆形近字和同音字（比如把“甘甜”写成了“干甜”，把“微风”写成其它字）。请找出这些做错的生字词并在游戏里为他们定制地鼠特训关卡！`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",

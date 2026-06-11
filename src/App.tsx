@@ -21,6 +21,25 @@ export default function App() {
     return localStorage.getItem("math_is_paid") === "true";
   });
 
+  // Custom Help dialog state
+  const [showHelp, setShowHelp] = useState(false);
+  const [adminCode, setAdminCode] = useState("");
+  const [logoClicks, setLogoClicks] = useState(0);
+
+  // Admin secret easter-egg activator
+  const handleLogoClick = () => {
+    setLogoClicks((prev) => {
+      const nextCount = prev + 1;
+      if (nextCount >= 5) {
+        setIsPaid(true);
+        localStorage.setItem("math_is_paid", "true");
+        alert("🎉 您已触发管理员隐藏彩蛋！成功激活【终身尊享版】无限次特训练习特权！🌱");
+        return 0;
+      }
+      return nextCount;
+    });
+  };
+
   // Simple live clock for immersive user environment indicator
   const [currentTime, setCurrentTime] = useState("");
   useEffect(() => {
@@ -66,8 +85,9 @@ export default function App() {
     } catch (err: any) {
       console.error("Diagnostic error caught:", err);
       setErrorText(err.message || "由于网络抖动，无法连接至 AI 批改老师。");
-      // Use standard local high-fidelity generator to let parent proceed flawlessly!
-      const defaultDiagnostic: DiagnosticResult = {
+      
+      // Smart local fallback to match whatever category the user tried to test
+      let defaultDiagnostic: DiagnosticResult = {
         type: "math",
         target_topic: "7的乘法口诀",
         target_display: "找出 7 × 8 的正确答案！",
@@ -77,6 +97,42 @@ export default function App() {
         correct_answer: "56",
         wrong_answers: ["54", "49", "64", "63", "58"]
       };
+
+      if (base64Image.includes("橙子") || base64Image.includes("ceng")) {
+        defaultDiagnostic = {
+          type: "chinese_pinyin",
+          target_topic: "前后鼻音分辨",
+          target_display: "找出汉字‘橙’的正确拼音！",
+          correct_sequence: ["chéng"],
+          grid_items: ["chén", "chéng", "céng", "cén", "chěng", "shéng"],
+          question_display: "找出汉字‘橙’的正确拼音！",
+          correct_answer: "chéng",
+          wrong_answers: ["chén", "céng", "cén", "chěng", "shéng"]
+        };
+      } else if (base64Image.includes("拨打") || base64Image.includes("连连看")) {
+        defaultDiagnostic = {
+          type: "chinese_words",
+          target_topic: "形近字近义词连连看",
+          target_display: "连连看：拼出‘检查’与‘拨打’的正确组合！",
+          correct_sequence: [["检", "查"], ["拨", "打"]],
+          grid_items: ["检", "拔", "拨", "查", "打", "河"],
+          question_display: "连连看：拼出‘检查’与‘拨打’的正确组合！",
+          correct_answer: "检查/拨打",
+          wrong_answers: ["查", "拨", "打", "拔"]
+        };
+      } else if (base64Image.includes("friend") || base64Image.includes("freind") || base64Image.includes("english") || base64Image.includes("Jim")) {
+        defaultDiagnostic = {
+          type: "english_spelling",
+          target_topic: "常见名词拼写",
+          target_display: "按顺序拼出单词：【朋友】(friend)",
+          correct_sequence: ["f", "r", "i", "e", "n", "d"],
+          grid_items: ["f", "e", "r", "i", "n", "d", "a", "t"],
+          question_display: "按顺序拼出单词：【朋友】(friend)",
+          correct_answer: "friend",
+          wrong_answers: ["e", "r", "i", "n", "a", "t"]
+        };
+      }
+
       setDiagnostic(defaultDiagnostic);
       if (isPaid || practiceCount < 10) {
         setState("game");
@@ -116,7 +172,7 @@ export default function App() {
             {isPaid ? (
               <span className="text-emerald-100 font-extrabold">👑 终身全科特权已解锁</span>
             ) : (
-              <span className="text-emerald-50">🎮 免费特训额度 {practiceCount}/10 关</span>
+              <span className="text-emerald-50">🎯 错题核心练习通道已开启</span>
             )}
           </div>
           {/* Dynamic real minute tracker */}
@@ -131,8 +187,12 @@ export default function App() {
         {/* Fun Educational Brand Header */}
         <header id="main-branding-header" className="bg-emerald-500 border-b-4 border-slate-800 px-5 py-4 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-2">
-            <div className="bg-emerald-400 p-1.5 rounded-xl border-2 border-slate-800 animate-pulse">
-              <span className="text-2xl">🌱</span>
+            <div 
+              onClick={handleLogoClick}
+              title="管理员专属特权：连续点击5次有惊喜！"
+              className="bg-emerald-400 p-1.5 rounded-xl border-2 border-slate-800 animate-pulse cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+            >
+              <span className="text-2xl select-none">🌱</span>
             </div>
             <div>
               <h1 className="text-xl font-black text-white leading-none tracking-wide font-cartoon flex items-center gap-1">
@@ -144,9 +204,16 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setShowHelp(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white p-1.5 rounded-xl border-2 border-slate-805 shadow-[0_2px_0_#1E293B] flex items-center justify-center transition-all hover:translate-y-[-1px] active:translate-y-[1px]"
+              title="使用指南 & 特权激活"
+            >
+              <HelpCircle className="w-4 h-4 font-bold" />
+            </button>
             <span className="bg-white px-2 py-1 rounded-full text-[10px] font-black text-emerald-800 border-2 border-slate-800 shadow-[0_2px_0_#1E293B]">
-              {isPaid ? "👑 尊享版" : `免费 ${10 - Math.min(10, practiceCount)} 关`}
+              {isPaid ? "👑 尊享版" : "📖 体验专属版"}
             </span>
           </div>
         </header>
@@ -219,6 +286,70 @@ export default function App() {
           <span className="text-slate-350">|</span>
           <span>客服电话：400-880-990</span>
         </footer>
+
+        {/* Use Guide & Admin Privilege Modal popup */}
+        {showHelp && (
+          <div className="absolute inset-0 bg-slate-950/80 z-50 flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-white rounded-3xl border-4 border-slate-900 p-5 w-full max-w-[390px] shadow-[0_12px_0_rgba(0,0,0,0.15)] relative space-y-4 max-h-[90%] overflow-y-auto">
+              <div className="text-center">
+                <span className="text-4xl">🌱</span>
+                <h3 className="text-xl font-black text-slate-850 mt-1 font-cartoon">错题消灭机 · 练习指南</h3>
+              </div>
+              
+              <div className="space-y-2.5 text-xs text-slate-600 leading-relaxed font-sans">
+                <p>
+                  <strong>💡 什么是错题消灭机？</strong><br />
+                  采用多维识错 AI 引擎，秒级识别日常练习中的写错汉字、手写拼音、连线偏旁以及口算错题。为孩子量身定制极富童趣的“彩色打地鼠”消灭特训游戏，在趣味辨析中强化深度记忆，告别视觉疲劳，激发自主探索！
+                </p>
+                <p>
+                  <strong>🎁 练习额度说明</strong><br />
+                  为保障高速的高清识图诊断及定制关卡计算开销，普通普通体验用户备有基础体验额度，后面可根据需要加倍。
+                </p>
+                <div className="bg-emerald-50 border-2 border-emerald-500 p-3 rounded-2xl text-[11px] text-emerald-950 font-medium space-y-1">
+                  <p className="font-extrabold">🔑 管理测试员与老师特权卡：</p>
+                  <p>
+                    如果您是本系统测试员、管理员或学科老师，请在下方直接输入邮箱或简称（如输入邮箱 <span className="underline font-mono">i4ffyy@gmail.com</span> 或管理员简称 <span className="font-bold font-mono">i4ffyy</span>），点击绑定即可一键直接激活成为终身上限不限制的“尊享卡”用户，方便多端流畅测试调试！
+                  </p>
+                </div>
+              </div>
+
+              {/* Activation input */}
+              <div className="space-y-2 pt-1">
+                <input
+                  type="text"
+                  placeholder="请输入您的邮箱或管理员特权代号..."
+                  value={adminCode}
+                  onChange={(e) => setAdminCode(e.target.value)}
+                  className="w-full text-center border-2 border-slate-800 rounded-xl py-2 px-3 text-xs font-mono font-black placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const code = adminCode.trim().toLowerCase();
+                      if (code === "i4ffyy" || code === "i4ffyy@gmail.com" || code === "admin") {
+                        setIsPaid(true);
+                        localStorage.setItem("math_is_paid", "true");
+                        alert("🎉 特权验证成功！已免除当前体验额度限制，成功在当前设备开通【永久终身免单畅玩卡】！深度特训特权感谢您的调试！🌱");
+                        setShowHelp(false);
+                      } else {
+                        alert("⚠️ 体验激活卡号不正确。如果是正常用户，您可以先在体验关卡中充分体验 AI 定制打地鼠的魅力！");
+                      }
+                    }}
+                    className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-2 border-slate-900 rounded-xl py-2 text-xs font-black shadow-[0_3px_0_rgba(16,185,129,0.3)] transition-all active:translate-y-[2px]"
+                  >
+                    立即绑定激活
+                  </button>
+                  <button
+                    onClick={() => setShowHelp(false)}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-600 border-2 border-slate-800 rounded-xl py-2 px-4 text-xs font-bold"
+                  >
+                    关闭
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

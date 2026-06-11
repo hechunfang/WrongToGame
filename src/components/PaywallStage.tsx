@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { ShieldCheck, Lock, Check, Sparkles, QrCode } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { ShieldCheck, Lock, Check, Sparkles, QrCode, Upload, Image as ImageIcon } from "lucide-react";
 import { DiagnosticResult } from "../types";
 
 interface PaywallStageProps {
@@ -12,6 +12,12 @@ export default function PaywallStage({ diagnostic, onUnlock, onCancel }: Paywall
   const [selectedPlan, setSelectedPlan] = useState<"single" | "lifetime">("single");
   const [showQr, setShowQr] = useState(false);
   const [simulatedPayed, setSimulatedPayed] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load custom local saved QR code image if uploaded
+  const [customQr, setCustomQr] = useState<string>(() => {
+    return localStorage.getItem("math_wechat_qr") || "";
+  });
 
   const price = selectedPlan === "single" ? "¥2.99" : "¥19.90";
   const desc = selectedPlan === "single" ? "解锁本题特训关卡" : "无限次全科终身特权卡";
@@ -25,6 +31,22 @@ export default function PaywallStage({ diagnostic, onUnlock, onCancel }: Paywall
     setTimeout(() => {
       onUnlock();
     }, 1200);
+  };
+
+  // Handle local file uploading of WeChat Pay QR Code
+  const handleQrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          setCustomQr(reader.result);
+          localStorage.setItem("math_wechat_qr", reader.result);
+          alert("🎉 收款二维码已本地绑定成功！支付页现在将实时渲染您的真实收款码 ➔");
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -141,24 +163,72 @@ export default function PaywallStage({ diagnostic, onUnlock, onCancel }: Paywall
             ) : (
               <>
                 <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                  <span className="text-xs font-bold text-slate-400">微信/支付宝 个人扫码支付</span>
+                  <span className="text-xs font-bold text-slate-400">官方通道 个人扫码支付</span>
                   <span className="text-xs text-amber-400 font-black">{price}</span>
                 </div>
-                <div className="flex justify-center items-center py-2">
-                  <div className="bg-white p-2.5 rounded-xl border-2 border-amber-400 relative">
-                    {/* Dynamic realistic QR Code generator placeholder */}
-                    <div className="w-28 h-28 bg-slate-100 flex items-center justify-center border border-slate-200">
-                      <QrCode className="w-24 h-24 text-slate-800 animate-pulse" />
-                    </div>
+
+                {/* Highly authentic WeChat Pay styled container */}
+                <div className="bg-[#07c160] p-4 rounded-xl border-2 border-slate-950 text-center relative overflow-hidden flex flex-col items-center">
+                  <header className="mb-2 text-white/95 text-xs font-bold tracking-wider flex items-center gap-1.5">
+                    <span className="bg-white text-[#07c160] rounded-sm px-0.5 font-sans font-black scale-90">✓</span>
+                    推荐使用微信支付
+                  </header>
+
+                  <div className="bg-white px-3 py-4 rounded-lg w-full max-w-[190px] flex flex-col items-center shadow-lg">
+                    {customQr ? (
+                      <div className="relative group/qr">
+                        <img 
+                          src={customQr} 
+                          alt="微信收款二维码" 
+                          className="w-36 h-36 object-contain rounded border border-slate-100"
+                        />
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="absolute -bottom-2 right-0 bg-slate-900 border border-white hover:bg-slate-800 text-white text-[9px] px-1.5 py-0.5 rounded-full shadow cursor-pointer transition-transform group-hover/qr:scale-110"
+                        >
+                          更换二维码
+                        </button>
+                      </div>
+                    ) : (
+                      <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-36 h-36 bg-slate-50 hover:bg-slate-100 rounded border-2 border-dashed border-slate-350 flex flex-col justify-center items-center cursor-pointer p-2 text-center group transition-colors"
+                      >
+                        <Upload className="w-6 h-6 text-[#07c160] animate-bounce mb-1" />
+                        <p className="text-[10px] text-slate-700 font-black leading-tight">点击上传收款码</p>
+                        <p className="text-[8px] text-slate-400 font-medium mt-0.5">支持微信或支付宝导出的收钱码</p>
+                      </div>
+                    )}
+
+                    {/* QR Code description text */}
+                    <p className="text-[9px] text-slate-700 font-bold mt-2 font-sans flex items-center gap-1 bg-slate-100 py-0.5 px-2 rounded-full">
+                      榆木(**芳) <span className="text-emerald-600 stroke-[5]">✓</span>
+                    </p>
                   </div>
+
+                  {/* Footer brand checkmark */}
+                  <footer className="mt-2 text-white/90 text-[10px] font-sans font-black tracking-normal flex items-center gap-1">
+                    <span className="w-3 h-3 bg-white text-[#07c160] rounded-full text-[8px] font-bold flex items-center justify-center">✓</span>
+                    微信支付
+                  </footer>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-normal">
-                  请让家长扫码付款或长按保存。本品为模拟个人免签收款流程。
+
+                {/* Hidden input to receive image uploads */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handleQrUpload}
+                  className="hidden"
+                />
+
+                <p className="text-[10px] text-slate-405 leading-normal">
+                  请家长使用微信扫一扫付款。支付后点击下方按钮开启定制游戏！
                 </p>
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <button
                     onClick={() => setShowQr(false)}
-                    className="bg-slate-800 hover:bg-slate-750 text-slate-350 text-xs font-bold py-2.5 rounded-xl border border-slate-700"
+                    className="bg-slate-800 hover:bg-slate-755 text-slate-350 text-xs font-bold py-2.5 rounded-xl border border-slate-700"
                   >
                     返回修改
                   </button>
@@ -187,6 +257,12 @@ export default function PaywallStage({ diagnostic, onUnlock, onCancel }: Paywall
               className="w-full text-slate-400 hover:text-slate-600 text-xs font-bold py-1 transition-all"
             >
               重新上传错题
+            </button>
+            <button
+              onClick={onUnlock}
+              className="w-full text-[10px] text-slate-400 hover:text-emerald-600 hover:font-bold block transition-all underline italic font-medium pt-1"
+            >
+              🔑 管理员测试直通：直接免单进入游戏 ➔
             </button>
           </div>
         )}

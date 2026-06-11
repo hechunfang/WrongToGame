@@ -1,7 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Clock, Star, AlertCircle, HelpCircle, Trophy, Sparkles } from "lucide-react";
+import { Clock, Star, AlertCircle, HelpCircle, Trophy, Sparkles, Volume2 } from "lucide-react";
 import { DiagnosticResult, Mole } from "../types";
 import { decorateMathQuestion, getFormulaEquiv } from "../utils/mathDecorator";
+
+const MOLE_THEMES: Record<string, { body: string; ears: string; innerEars: string }> = {
+  yellow: { body: "from-yellow-300 via-amber-400 to-amber-500", ears: "bg-amber-500", innerEars: "bg-yellow-250 animate-pulse" },
+  pink: { body: "from-pink-300 via-rose-400 to-rose-500", ears: "bg-rose-500", innerEars: "bg-pink-100" },
+  cyan: { body: "from-cyan-300 via-sky-400 to-sky-500", ears: "bg-sky-500", innerEars: "bg-cyan-100" },
+  orange: { body: "from-orange-300 via-amber-400 to-orange-500", ears: "bg-orange-500", innerEars: "bg-orange-100" },
+  purple: { body: "from-purple-300 via-indigo-400 to-purple-500", ears: "bg-purple-500", innerEars: "bg-purple-200" },
+  green: { body: "from-green-400 via-emerald-400 to-emerald-500", ears: "bg-emerald-500", innerEars: "bg-pink-300" },
+  rose: { body: "from-rose-400 via-pink-400 to-rose-500", ears: "bg-rose-500", innerEars: "bg-pink-100" }
+};
 
 interface GameStageProps {
   diagnostic: DiagnosticResult;
@@ -43,6 +53,76 @@ export default function GameStage({ diagnostic, onFinish }: GameStageProps) {
 
   const effectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasFinishedRef = useRef(false);
+
+  // Audio pronunciation player using browser Native Web Speech synthesis
+  const handleSpeak = () => {
+    if (!window.speechSynthesis) {
+      setFeedback("⚠️ 您的浏览器不支持语音播放，已为您跳过");
+      setFeedbackType("error");
+      return;
+    }
+
+    try {
+      window.speechSynthesis.cancel();
+
+      let textToSpeak = "";
+      let lang = "zh-CN";
+      let rate = 0.75; // Slower child-friendly speed
+
+      const answer = diagnostic.correct_answer || (Array.isArray(correctSeq) ? correctSeq.join("") : "");
+
+      if (gameType === "chinese_pinyin") {
+        lang = "zh-CN";
+        let character = "";
+        const match = targetDisplay.match(/[‘'“\"「『]([^‘'“\"」』])[’'”\"」』]/);
+        if (match && match[1]) {
+          character = match[1];
+        } else {
+          const cnCharMatch = targetDisplay.match(/[\u4e00-\u9fa5]/);
+          if (cnCharMatch) {
+            character = cnCharMatch[0];
+          }
+        }
+
+        if (character) {
+          textToSpeak = `${character}，拼音读：${answer}`;
+        } else {
+          textToSpeak = answer;
+        }
+      } else if (gameType === "english_spelling") {
+        lang = "en-US";
+        textToSpeak = answer;
+      } else {
+        return; // Other diagnostic views do not speak
+      }
+
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      utterance.lang = lang;
+      utterance.rate = rate;
+      utterance.onstart = () => {
+        setFeedback(`🔊 正在发音播放中：${textToSpeak}`);
+        setFeedbackType("success");
+      };
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.error("Speech Synthesis error:", err);
+    }
+  };
+
+  // Auto speak on mount or diagnostic transitions
+  useEffect(() => {
+    if (gameType === "chinese_pinyin" || gameType === "english_spelling") {
+      const timer = setTimeout(() => {
+        handleSpeak();
+      }, 700);
+      return () => {
+        clearTimeout(timer);
+        if (window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+        }
+      };
+    }
+  }, [diagnostic, gameType]);
 
   // Sound effects using Web Audio API
   const playSound = (type: "correct" | "wrong" | "popup" | "finish") => {
@@ -177,12 +257,16 @@ export default function GameStage({ diagnostic, onFinish }: GameStageProps) {
 
             // Moles display simple fallback numbers as requested to keep font size large and clear.
             // No formula decoration on mole.
+            
+            const colorKeys = ["yellow", "pink", "cyan", "orange", "purple", "green", "rose"];
+            const randomColor = colorKeys[Math.floor(Math.random() * colorKeys.length)];
 
             return {
               ...m,
               active: true,
               value: val,
               isCorrect,
+              color: randomColor,
             };
           }
           return m;
@@ -481,6 +565,19 @@ export default function GameStage({ diagnostic, onFinish }: GameStageProps) {
           </div>
         )}
 
+        {/* Highlighted Speaker Icon Playback Trigger */}
+        {(gameType === "chinese_pinyin" || gameType === "english_spelling") && (
+          <div className="mt-2.5 flex justify-center">
+            <button
+              onClick={handleSpeak}
+              className="flex items-center gap-2 bg-yellow-350 hover:bg-yellow-200 text-slate-900 font-extrabold text-xs px-4 py-2 rounded-2xl border-4 border-slate-900 shadow-[0_3.5px_0_#0f172a] active:translate-y-[1.5px] active:shadow-[0_2px_0_#0f172a] transition-all cursor-pointer animate-pulse"
+            >
+              <Volume2 className="w-4 h-4 text-slate-900 fill-slate-900" />
+              <span>🔊 点击听正确发音</span>
+            </button>
+          </div>
+        )}
+
         <p className="text-[10px] text-white/80 font-bold text-center mt-2 flex items-center justify-center gap-1 bg-black/30 py-0.5 px-3 rounded-lg border border-white/10 w-fit mx-auto">
           【 关卡要点: {targetTopic} 】
         </p>
@@ -491,65 +588,68 @@ export default function GameStage({ diagnostic, onFinish }: GameStageProps) {
         
         {/* A. Math & Pinyin (Whack a mole format) */}
         {(gameType === "math" || gameType === "chinese_pinyin") &&
-          moles.map((mole) => (
-            <div
-              key={mole.id}
-              onClick={() => handleWhack(mole)}
-              className="aspect-square bg-emerald-950/20 rounded-2xl border-4 border-slate-800 overflow-hidden relative shadow-inner flex items-end justify-center cursor-pointer group active:scale-95"
-              style={{ minHeight: "92px" }}
-            >
+          moles.map((mole) => {
+            const activeTheme = MOLE_THEMES[mole.color || "green"] || MOLE_THEMES.green;
+            return (
               <div
-                className="absolute w-[90%] h-[92%] bg-gradient-to-b from-green-400 via-emerald-400 to-emerald-500 border-t-4 border-r-2 border-l-2 border-slate-800 rounded-t-[40px] transition-all duration-150 flex flex-col justify-start items-center shadow-lg pointer-events-none pt-1"
-                style={{
-                  bottom: mole.active ? "0px" : "-110%",
-                  transform: mole.active ? "scale(1)" : "scale(0.8)",
-                }}
+                key={mole.id}
+                onClick={() => handleWhack(mole)}
+                className="aspect-square bg-emerald-950/20 rounded-2xl border-4 border-slate-800 overflow-hidden relative shadow-inner flex items-end justify-center cursor-pointer group active:scale-95"
+                style={{ minHeight: "92px" }}
               >
-                {/* Ears */}
-                <div className="absolute -top-2 inset-x-0 flex justify-between px-2.5 pointer-events-none">
-                  <div className="w-5 h-5 bg-emerald-500 border-2 border-slate-800 rounded-full flex items-center justify-center">
-                    <div className="w-2.5 h-2.5 bg-pink-300 rounded-full"></div>
+                <div
+                  className={`absolute w-[90%] h-[92%] bg-gradient-to-b ${activeTheme.body} border-t-4 border-r-2 border-l-2 border-slate-800 rounded-t-[40px] transition-all duration-150 flex flex-col justify-start items-center shadow-lg pointer-events-none pt-1`}
+                  style={{
+                    bottom: mole.active ? "0px" : "-110%",
+                    transform: mole.active ? "scale(1)" : "scale(0.8)",
+                  }}
+                >
+                  {/* Ears */}
+                  <div className="absolute -top-2 inset-x-0 flex justify-between px-2.5 pointer-events-none">
+                    <div className={`w-5 h-5 ${activeTheme.ears} border-2 border-slate-800 rounded-full flex items-center justify-center`}>
+                      <div className={`w-2.5 h-2.5 ${activeTheme.innerEars} rounded-full`}></div>
+                    </div>
+                    <div className={`w-5 h-5 ${activeTheme.ears} border-2 border-slate-800 rounded-full flex items-center justify-center`}>
+                      <div className={`w-2.5 h-2.5 ${activeTheme.innerEars} rounded-full`}></div>
+                    </div>
                   </div>
-                  <div className="w-5 h-5 bg-emerald-500 border-2 border-slate-800 rounded-full flex items-center justify-center">
-                    <div className="w-2.5 h-2.5 bg-pink-300 rounded-full"></div>
-                  </div>
-                </div>
 
-                {/* Eyes */}
-                <div className="flex gap-4 mt-2 justify-center relative z-10">
-                  <div className="w-4 h-4 bg-slate-900 rounded-full flex items-start justify-start p-0.5 relative">
-                    <div className="w-1.5 h-1.5 bg-white rounded-full absolute top-0.5 left-0.5"></div>
+                  {/* Eyes */}
+                  <div className="flex gap-4 mt-2 justify-center relative z-10">
+                    <div className="w-4 h-4 bg-slate-900 rounded-full flex items-start justify-start p-0.5 relative">
+                      <div className="w-1.5 h-1.5 bg-white rounded-full absolute top-0.5 left-0.5"></div>
+                    </div>
+                    <div className="w-4 h-4 bg-slate-900 rounded-full flex items-start justify-start p-0.5 relative">
+                      <div className="w-1.5 h-1.5 bg-white rounded-full absolute top-0.5 left-0.5"></div>
+                    </div>
                   </div>
-                  <div className="w-4 h-4 bg-slate-900 rounded-full flex items-start justify-start p-0.5 relative">
-                    <div className="w-1.5 h-1.5 bg-white rounded-full absolute top-0.5 left-0.5"></div>
+
+                  {/* Cheeks */}
+                  <div className="flex items-center gap-1.5 mt-0.5 relative">
+                    <span className="w-2 h-1.5 bg-rose-400 rounded-full block animate-pulse"></span>
+                    <div className="w-1.5 h-1 bg-emerald-950 rounded-full"></div>
+                    <span className="w-2 h-1.5 bg-rose-400 rounded-full block animate-pulse"></span>
+                  </div>
+
+                  {/* Grid Item Content Container held by the Mole */}
+                  <div className="bg-slate-950 border-2 border-slate-800 rounded-xl px-2 py-1 mt-1.5 max-w-[95%] text-center shadow-md overflow-hidden min-w-[70px] flex items-center justify-center">
+                    <span className={`font-black text-amber-300 font-mono tracking-tighter leading-none block whitespace-nowrap ${
+                      mole.value.length > 10 
+                        ? 'text-[10px]' 
+                        : mole.value.length > 5 
+                        ? 'text-xs' 
+                        : mole.value.length >= 3 
+                        ? 'text-sm sm:text-base' 
+                        : 'text-2xl sm:text-3xl scale-110 drop-shadow-[0_2px_0_#000000]'
+                    }`}>
+                      {mole.value}
+                    </span>
                   </div>
                 </div>
-
-                {/* Cheeks */}
-                <div className="flex items-center gap-1.5 mt-0.5 relative">
-                  <span className="w-2 h-1.5 bg-rose-400 rounded-full block animate-pulse"></span>
-                  <div className="w-1.5 h-1 bg-emerald-950 rounded-full"></div>
-                  <span className="w-2 h-1.5 bg-rose-400 rounded-full block animate-pulse"></span>
-                </div>
-
-                {/* Grid Item Content Container held by the Mole */}
-                <div className="bg-slate-950 border-2 border-slate-800 rounded-xl px-2 py-1 mt-1.5 max-w-[95%] text-center shadow-md overflow-hidden min-w-[70px] flex items-center justify-center">
-                  <span className={`font-black text-amber-300 font-mono tracking-tighter leading-none block whitespace-nowrap ${
-                    mole.value.length > 10 
-                      ? 'text-[10px]' 
-                      : mole.value.length > 5 
-                      ? 'text-xs' 
-                      : mole.value.length >= 3 
-                      ? 'text-sm sm:text-base' 
-                      : 'text-2xl sm:text-3xl scale-110 drop-shadow-[0_2px_0_#000000]'
-                  }`}>
-                    {mole.value}
-                  </span>
-                </div>
+                <div className="absolute bottom-0 inset-x-0 h-4 bg-emerald-600 border-t-2 border-slate-850 pointer-events-none rounded-b-xl z-20"></div>
               </div>
-              <div className="absolute bottom-0 inset-x-0 h-4 bg-emerald-600 border-t-2 border-slate-850 pointer-events-none rounded-b-xl z-20"></div>
-            </div>
-          ))}
+            );
+          })}
 
         {/* B. Chinese Word Connective (Lianliankan layout) */}
         {gameType === "chinese_words" &&

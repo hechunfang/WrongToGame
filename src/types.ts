@@ -18,4 +18,5 @@ export interface Mole {
   active: boolean; // Is the mole visible?
   value: string;   // The answer or expression it exhibits
   isCorrect: boolean;
+  color?: string;  // Creative colorful moles
 }
