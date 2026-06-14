@@ -11,20 +11,73 @@ export default function App() {
   const [diagnostic, setDiagnostic] = useState<DiagnosticResult | null>(null);
   const [gameScore, setGameScore] = useState(0);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [parentPhone, setParentPhone] = useState<string>(() => {
+    return localStorage.getItem("parent_phone") || "13800138000";
+  });
+  const [parentNickname, setParentNickname] = useState<string>(() => {
+    return localStorage.getItem("parent_nickname") || "小火伴家长";
+  });
 
   // Persistence stats
   const [practiceCount, setPracticeCount] = useState<number>(() => {
-    const saved = localStorage.getItem("math_practice_count");
+    const phone = localStorage.getItem("parent_phone") || "13800138000";
+    if (phone === "15217704049") {
+      return 0;
+    }
+    const saved = localStorage.getItem(`math_practice_count_${phone}`);
     return saved ? parseInt(saved, 10) : 0;
   });
+
+  // Sync and reset practiceCount when parent phone changes
+  useEffect(() => {
+    if (parentPhone === "15217704049") {
+      setPracticeCount(0);
+      localStorage.setItem("math_practice_count_15217704049", "0");
+    } else {
+      const saved = localStorage.getItem(`math_practice_count_${parentPhone}`);
+      setPracticeCount(saved ? parseInt(saved, 10) : 0);
+    }
+  }, [parentPhone]);
   const [isPaid, setIsPaid] = useState<boolean>(() => {
     return localStorage.getItem("math_is_paid") === "true";
+  });
+  const [enableGame, setEnableGame] = useState<boolean>(() => {
+    const saved = localStorage.getItem("math_enable_game");
+    return saved === "true";
   });
 
   // Custom Help dialog state
   const [showHelp, setShowHelp] = useState(false);
   const [adminCode, setAdminCode] = useState("");
   const [logoClicks, setLogoClicks] = useState(0);
+
+  // Db connection tracking info
+  const [dbStatus, setDbStatus] = useState<{
+    loaded: boolean;
+    healthy: boolean;
+    host?: string;
+    databaseName?: string;
+    errorFeedback?: string;
+  }>({ loaded: false, healthy: false });
+
+  useEffect(() => {
+    fetch("/api/health")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.database) {
+          setDbStatus({
+            loaded: true,
+            healthy: data.database.healthy,
+            host: data.database.host,
+            databaseName: data.database.databaseName,
+            errorFeedback: data.database.errorFeedback
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to query API health status:", err);
+      });
+  }, [showHelp]);
 
   // Admin secret easter-egg activator
   const handleLogoClick = () => {
@@ -63,7 +116,7 @@ export default function App() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ image: base64Image }),
+        body: JSON.stringify({ image: base64Image, phone: parentPhone }),
       });
 
       if (!response.ok) {
@@ -73,9 +126,13 @@ export default function App() {
       const payload = await response.json();
       if (payload.success && payload.data) {
         setDiagnostic(payload.data);
-        // Play directly if already paid OR still within the first 10 trial games!
-        if (isPaid || practiceCount < 10) {
-          setState("game");
+        // Play directly if already paid OR still within the first 3 free trial uploads!
+        if (isPaid || practiceCount < 3) {
+          if (enableGame) {
+            setState("game");
+          } else {
+            setState("settlement");
+          }
         } else {
           setState("paywall");
         }
@@ -129,13 +186,31 @@ export default function App() {
           grid_items: ["f", "e", "r", "i", "n", "d", "a", "t"],
           question_display: "按顺序拼出单词：【朋友】(friend)",
           correct_answer: "friend",
-          wrong_answers: ["e", "r", "i", "n", "a", "t"]
+          wrong_answers: ["e", "r", "i", "n", "a", "t"],
+          english_scene_sentence: "He wants to meet his happy school friend Jim in the park.",
+          english_scene_translation: "他想在公园里和他快乐的学校朋友吉姆见面。",
+          english_scene_image: "friend"
+        };
+      } else if (base64Image.includes("甘甜") || base64Image.includes("甘字") || base64Image.includes("gan") || base64Image.includes("干甜") || base64Image.includes("gān")) {
+        defaultDiagnostic = {
+          type: "chinese_words",
+          target_topic: "易错字识字：甘 (甘甜/甘苦)",
+          target_display: "连连看：拼出‘甘甜’及‘甘苦’的正确汉字！",
+          correct_sequence: [["甘", "甜"], ["甘", "苦"]],
+          grid_items: ["甘", "甜", "干", "苦", "心", "干"],
+          question_display: "请在大地鼠中拼出正确的‘甘甜’和‘甘苦’（注意区分‘甘’与‘干’）！",
+          correct_answer: "甘",
+          wrong_answers: ["干", "杆", "古", "甜"]
         };
       }
 
       setDiagnostic(defaultDiagnostic);
-      if (isPaid || practiceCount < 10) {
-        setState("game");
+      if (isPaid || practiceCount < 3) {
+        if (enableGame) {
+          setState("game");
+        } else {
+          setState("settlement");
+        }
       } else {
         setState("paywall");
       }
@@ -145,14 +220,31 @@ export default function App() {
   const handleUnlockAndPlay = () => {
     localStorage.setItem("math_is_paid", "true");
     setIsPaid(true);
-    setState("game");
+    if (enableGame) {
+      setState("game");
+    } else {
+      setState("settlement");
+    }
+  };
+
+  const handleSelectOral = (payload: DiagnosticResult) => {
+    setDiagnostic(payload);
+    if (isPaid || practiceCount < 3) {
+      if (enableGame) {
+        setState("game");
+      } else {
+        setState("settlement");
+      }
+    } else {
+      setState("paywall");
+    }
   };
 
   const handleGameFinished = (finalScore: number) => {
     setGameScore(finalScore);
     const newCount = practiceCount + 1;
     setPracticeCount(newCount);
-    localStorage.setItem("math_practice_count", String(newCount));
+    localStorage.setItem(`math_practice_count_${parentPhone}`, String(newCount));
     setState("settlement");
   };
 
@@ -234,18 +326,34 @@ export default function App() {
           {state === "upload" && (
             <UploadStage 
               onAnalyze={handleAnalyzeImage} 
+              onSelectOral={handleSelectOral}
               isAnalyzing={false} 
               practiceCount={practiceCount}
               isPaid={isPaid}
+              setIsPaid={setIsPaid}
+              enableGame={enableGame}
+              setEnableGame={setEnableGame}
+              parentPhone={parentPhone}
+              setParentPhone={setParentPhone}
+              parentNickname={parentNickname}
+              setParentNickname={setParentNickname}
             />
           )}
 
           {state === "diagnosing" && (
             <UploadStage 
               onAnalyze={handleAnalyzeImage} 
+              onSelectOral={handleSelectOral}
               isAnalyzing={true} 
               practiceCount={practiceCount}
               isPaid={isPaid}
+              setIsPaid={setIsPaid}
+              enableGame={enableGame}
+              setEnableGame={setEnableGame}
+              parentPhone={parentPhone}
+              setParentPhone={setParentPhone}
+              parentNickname={parentNickname}
+              setParentNickname={setParentNickname}
             />
           )}
 
@@ -271,6 +379,8 @@ export default function App() {
             <SettlementStage 
               score={gameScore} 
               diagnostic={diagnostic} 
+              gameEnabled={enableGame}
+              parentPhone={parentPhone}
               onReset={() => {
                 setState("upload");
                 setDiagnostic(null);
@@ -310,6 +420,52 @@ export default function App() {
                   <p>
                     如果您是本系统测试员、管理员或学科老师，请在下方直接输入邮箱或简称（如输入邮箱 <span className="underline font-mono">i4ffyy@gmail.com</span> 或管理员简称 <span className="font-bold font-mono">i4ffyy</span>），点击绑定即可一键直接激活成为终身上限不限制的“尊享卡”用户，方便多端流畅测试调试！
                   </p>
+                </div>
+
+                {/* Real-time Database Status Diagnostics */}
+                <div className="bg-slate-50 border-2 border-slate-200 p-3 rounded-2xl text-[11px] text-slate-700 font-medium space-y-1">
+                  <p className="font-extrabold text-slate-950 flex items-center gap-1">
+                    💾 外部 MySQL 数据库挂载状态：
+                  </p>
+                  {dbStatus.loaded ? (
+                    dbStatus.healthy ? (
+                      <div className="space-y-1">
+                        <p className="text-emerald-600 font-extrabold flex items-center gap-1">
+                          🟢 状态: 已建立连接
+                        </p>
+                        <p className="text-slate-500 text-[10px]">
+                          主机: <code className="bg-slate-100 px-1 border rounded">{dbStatus.host}</code>
+                        </p>
+                        <p className="text-slate-500 text-[10px]">
+                          库名: <code className="bg-slate-100 px-1 border rounded">{dbStatus.databaseName}</code>
+                        </p>
+                        <p className="text-[10px] text-slate-500">数据将持久化记录保存于外部服务器中。</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <p className="text-amber-600 font-extrabold flex items-center gap-1">
+                          ⚠️ 状态: 未连通 (当前为单机临时模拟模式)
+                        </p>
+                        <p className="text-slate-500 text-[10px]">
+                          尝试的主机: <code className="bg-slate-100 px-1 border rounded">{dbStatus.host || "无"}</code>
+                        </p>
+                        <p className="text-red-500 text-[10px] font-mono leading-normal bg-red-50/70 p-1.5 rounded-lg border border-red-200 mt-1">
+                          反馈信息: {dbStatus.errorFeedback || "连接超时 / 外部服务器拒绝或无端口响应"}
+                        </p>
+                        <div className="text-[10px] text-slate-500 leading-normal bg-amber-50/50 border border-amber-200 p-2 rounded-lg mt-1 space-y-1">
+                          <p className="font-bold text-amber-800">💡 为什么没有写入数据？</p>
+                          <p>
+                            由于您的数据库服务器（{dbStatus.host || "未知IP"}）拒绝了连接，系统目前正启动<strong>【临时内存保护兜底机制】</strong>以确保应用不崩溃并仍可供用户继续练习。
+                          </p>
+                          <p className="text-red-600 font-black">
+                            请确保您的服务器上有开放 3306 端口，且允许外部 IP 或本机用户连接访问。
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  ) : (
+                    <p className="text-slate-400">正在嗅探连接状态...</p>
+                  )}
                 </div>
               </div>
 

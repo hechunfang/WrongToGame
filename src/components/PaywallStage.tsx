@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, ChangeEvent } from "react";
 import { ShieldCheck, Lock, Check, Sparkles, QrCode, Upload, Image as ImageIcon } from "lucide-react";
 import { DiagnosticResult } from "../types";
 
@@ -34,7 +34,7 @@ export default function PaywallStage({ diagnostic, onUnlock, onCancel }: Paywall
   };
 
   // Handle local file uploading of WeChat Pay QR Code
-  const handleQrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleQrUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -158,7 +158,7 @@ export default function PaywallStage({ diagnostic, onUnlock, onCancel }: Paywall
                   ✓
                 </div>
                 <p className="font-bold text-emerald-400">支付成功！正在解锁特训...</p>
-                <p className="text-xs text-slate-400">开启您的打地鼠数学巩固挑战吧！</p>
+                <p className="text-xs text-slate-400">开启您的打地鼠错题消灭特训吧！</p>
               </div>
             ) : (
               <>

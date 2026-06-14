@@ -1,9 +1,14 @@
 export interface DiagnosticResult {
-  type: "math" | "chinese_pinyin" | "chinese_words" | "english_spelling";
+  type: "math" | "chinese_pinyin" | "chinese_words" | "english_spelling" | "english_oral";
   target_topic: string;
   target_display: string;
   correct_sequence: string[] | string[][];
   grid_items: string[];
+  
+  // English Scenarios & Oral fields
+  english_scene_sentence?: string;
+  english_scene_translation?: string;
+  english_scene_image?: string;
   
   // Backwards compatibility fallbacks
   question_display?: string;

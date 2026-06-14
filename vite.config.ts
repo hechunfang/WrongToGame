@@ -5,7 +5,24 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(), 
+      tailwindcss(),
+      {
+        name: 'html-cache-buster',
+        transformIndexHtml(html) {
+          if (process.env.NODE_ENV !== 'production') {
+            return html;
+          }
+          // Generates date string like 20260614 based on UTC
+          const version = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 8);
+          let processedHtml = html;
+          processedHtml = processedHtml.replace(/(href|src)="(\/assets\/[^"]+)"/g, `$1="$2?v=${version}"`);
+          processedHtml = processedHtml.replace(/(href|src)="(\/src\/[^"]+)"/g, `$1="$2?v=${version}"`);
+          return processedHtml;
+        }
+      }
+    ],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
